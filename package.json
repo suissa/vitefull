@@ -20,6 +20,7 @@
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "postinstall": "simple-git-hooks",
+    "prepare": "husky install",
     "format": "prettier --write --cache .",
     "lint": "eslint --cache .",
     "typecheck": "tsc -p scripts && pnpm -r --parallel run typecheck",
@@ -33,6 +34,7 @@
     "docs": "pnpm --filter=./docs run docs",
     "docs-build": "pnpm --filter=./docs run docs-build",
     "docs-serve": "pnpm --filter=./docs run docs-serve",
+    "prebuild": "pnpm format",
     "build": "pnpm -r --filter='./packages/*' run build",
     "dev": "pnpm -r --parallel --filter='./packages/*' run dev",
     "release": "tsx scripts/release.ts",
@@ -61,6 +63,7 @@
     "eslint-plugin-regexp": "^2.10.0",
     "execa": "^9.6.0",
     "globals": "^16.4.0",
+    "husky": "^9.1.7",
     "lint-staged": "^16.2.4",
     "picocolors": "^1.1.1",
     "playwright-chromium": "^1.56.0",
