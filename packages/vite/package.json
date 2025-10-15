@@ -144,6 +144,7 @@
     "sass-embedded": "^1.93.2",
     "sirv": "^3.0.2",
     "strip-literal": "^3.1.0",
+    "supertest": "^7.1.4",
     "terser": "^5.44.0",
     "tsconfck": "^3.1.6",
     "ufo": "^1.6.1",

@@ -114,6 +114,35 @@ export default defineConfig({
 })
 ```
 
+## server.api
+
+- **Type:** `false | { prefix?: string; dir?: string }`
+- **Default:** `{ prefix: '/api', dir: 'src/api' }`
+
+Serve API routes directly from the Vite dev server. When enabled, any request whose pathname starts with the configured `prefix` (defaults to `/api`) will resolve to a module inside `dir` (defaults to `src/api`). Modules are loaded through [`server.ssrLoadModule`](../guide/api-environment-frameworks.md#loadmodule), so TypeScript, JSX, and Vite plugins are applied before execution.
+
+Handlers can be provided via a default export or a named export that matches the request method (for example `export const POST = ...`). The return value determines the response:
+
+- Returning a `Response` is forwarded as-is to the browser.
+- Returning a `string` or `Buffer` sends the value directly.
+- Returning any other object sends a JSON response.
+- Returning `undefined` leaves the response open, so handlers can manually write to `res`.
+
+```ts twoslash [vite.config.ts]
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  server: {
+    api: {
+      prefix: '/functions',
+      dir: 'server/api',
+    },
+  },
+})
+```
+
+Set `server.api` to `false` to disable the middleware entirely.
+
 ## server.proxy
 
 - **Type:** `Record<string, string | ProxyOptions>`

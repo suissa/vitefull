@@ -1,0 +1,24 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - api
+  pull_request:
+    branches:
+      - api
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install
+      - name: Run tests
+        run: pnpm test
