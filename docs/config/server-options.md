@@ -114,6 +114,82 @@ export default defineConfig({
 })
 ```
 
+## server.api
+
+- **Type:** `false | { prefix?: string; dir?: string; plugins?: ApiPlugin[] }`
+- **Default:** `{ prefix: '/api', dir: 'src/api', plugins: [] }`
+
+Serve API routes directly from the Vite dev server. When enabled, any request whose pathname starts with the configured `prefix` (defaults to `/api`) will resolve to a module inside `dir` (defaults to `src/api`). Modules are loaded through [`server.ssrLoadModule`](../guide/api-environment-frameworks.md#loadmodule), so TypeScript, JSX, and Vite plugins are applied before execution.
+
+Handlers can be provided via a default export or a named export that matches the request method (for example `export const POST = ...`). The return value determines the response:
+
+- Returning a `Response` is forwarded as-is to the browser.
+- Returning a `string` or `Buffer` sends the value directly.
+- Returning any other object sends a JSON response.
+- Returning `undefined` leaves the response open, so handlers can manually write to `res`.
+
+```ts twoslash [vite.config.ts]
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  server: {
+    api: {
+      prefix: '/functions',
+      dir: 'server/api',
+    },
+  },
+})
+```
+
+Set `server.api` to `false` to disable the middleware entirely.
+
+The optional `plugins` array runs before filesystem handlers and can short-circuit
+requests or augment the Node.js `req`/`res` objects. Plugins receive an
+[`ApiRequestContext`](../guide/api-routes.md#api-plugins) that exposes the decoded
+pathname and a shared `state` bag. The Vite package ships with a few convenience
+plugins:
+
+- [`createJsonAuthPlugin`](../guide/api-routes.md#json-auth-plugin) issues and verifies
+  in-memory bearer tokens from a JSON credential map.
+- [`createOAuthPlugin`](../guide/api-routes.md#oauth-plugin) wires up OAuth flows for
+  Google and GitHub with minimal configuration.
+
+```ts twoslash [vite.config.ts]
+import { defineConfig, createJsonAuthPlugin, createOAuthPlugin } from 'vite'
+
+export default defineConfig({
+  server: {
+    api: {
+      plugins: [
+        createJsonAuthPlugin({
+          users: {
+            'demo@example.com': {
+              password: 'demo',
+              profile: { name: 'Demo User' },
+            },
+          },
+          publicRoutes: ['/auth/json/login'],
+        }),
+        createOAuthPlugin({
+          providers: {
+            google: {
+              clientId: process.env.GOOGLE_CLIENT_ID!,
+              clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+              redirectUri: 'http://localhost:5173/auth/google/callback',
+            },
+            github: {
+              clientId: process.env.GITHUB_CLIENT_ID!,
+              clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+              redirectUri: 'http://localhost:5173/auth/github/callback',
+            },
+          },
+        }),
+      ],
+    },
+  },
+})
+```
+
 ## server.proxy
 
 - **Type:** `Record<string, string | ProxyOptions>`

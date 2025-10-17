@@ -26,6 +26,31 @@ Vite provides an [HMR API](./api-hmr) over native ESM. Frameworks with HMR capab
 
 Note you don't need to manually set these up - when you [create an app via `create-vite`](./), the selected templates would have these pre-configured for you already.
 
+## API Routes
+
+The Vite dev server can serve API endpoints from local modules, similar to Next.js API routes. Files inside `src/api` (configurable via [`server.api.dir`](../config/server-options.md#server-api)) are matched to requests that start with `/api` by default. For example, adding the following module will respond to `GET /api/hello`:
+
+```ts [src/api/hello.ts]
+export default () => ({ message: 'Hello from the Vite API' })
+```
+
+Modules can also export named handlers that match HTTP methods:
+
+```ts [src/api/time.ts]
+export const GET = () => new Response(JSON.stringify({ now: Date.now() }), {
+  headers: { 'Content-Type': 'application/json' },
+})
+
+export const POST = async (req: Request) => {
+  const body = await new Response(req.body).text()
+  return `Received: ${body}`
+}
+```
+
+Handlers run through `server.ssrLoadModule`, so they benefit from Vite's ESM and TypeScript support. Returning objects will automatically send JSON responses, strings and buffers are sent as-is, and returning a standard `Response` gives you full control of the outgoing payload. You can disable the feature or customize the directory and URL prefix via the [`server.api`](../config/server-options.md#server-api) configuration option.
+
+The API middleware also supports request-level plugins via `server.api.plugins`. Built-in helpers like [`createJsonAuthPlugin`](./api-routes.md#json-auth-plugin) and [`createOAuthPlugin`](./api-routes.md#oauth-plugin) make it easy to layer authentication in front of your route modules. See the [API routes guide](./api-routes.md) for end-to-end examples, including a playground that combines JSON credentials with Google and GitHub OAuth.
+
 ## TypeScript
 
 Vite supports importing `.ts` files out of the box.

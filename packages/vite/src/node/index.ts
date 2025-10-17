@@ -13,6 +13,13 @@ export { perEnvironmentState } from './environment'
 export { createServer } from './server'
 export { preview } from './preview'
 export { build, createBuilder } from './build'
+export { createJsonAuthPlugin } from './server/api/plugins/jsonAuth'
+export {
+  createOAuthPlugin,
+  type OAuthPluginOptions,
+  type OAuthProviderOptions,
+  type OAuthProviderName,
+} from './server/api/plugins/oauth'
 
 export { optimizeDeps } from './optimizer'
 export { createIdResolver } from './idResolver'
@@ -105,6 +112,11 @@ export type {
   ConfigPluginContext,
   MinimalPluginContextWithoutEnvironment,
 } from './plugin'
+export type { ApiPlugin, ApiRequestContext } from './server/api/plugin'
+export type {
+  JsonAuthPluginOptions,
+  JsonAuthUser,
+} from './server/api/plugins/jsonAuth'
 export type { Environment } from './environment'
 export type { FilterPattern } from './utils'
 export type { CorsOptions, CorsOrigin, CommonServerOptions } from './http'

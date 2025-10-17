@@ -12,10 +12,11 @@ import colors from 'picocolors'
 import chokidar from 'chokidar'
 import launchEditorMiddleware from 'launch-editor-middleware'
 import type { SourceMap } from 'rollup'
+import type { ModuleRunner } from 'vite/module-runner'
 import type { FSWatcher, WatchOptions } from '#dep-types/chokidar'
 import type { Connect } from '#dep-types/connect'
-import type { ModuleRunner } from 'vite/module-runner'
 import type { CommonServerOptions } from '../http'
+import type { ApiPlugin } from './api/plugin'
 import {
   httpServerStart,
   resolveHttpServer,
@@ -83,6 +84,7 @@ import {
   createDevHtmlTransformFn,
   indexHtmlMiddleware,
 } from './middlewares/indexHtml'
+import { apiMiddleware } from './middlewares/api'
 import {
   servePublicMiddleware,
   serveRawFsMiddleware,
@@ -105,6 +107,22 @@ import { rejectInvalidRequestMiddleware } from './middlewares/rejectInvalidReque
 const usedConfigs = new WeakSet<ResolvedConfig>()
 
 export interface ServerOptions extends CommonServerOptions {
+  /**
+   * Configure API routes that are served directly from the Vite dev server.
+   *
+   * When enabled, any request whose pathname matches the configured `prefix`
+   * will be resolved to a module inside `dir`. The module is loaded with
+   * `server.ssrLoadModule`, so it supports TypeScript and Vite's transform
+   * pipeline. The module can export a default handler or HTTP verb named
+   * handlers (for example, `export const GET = () => { ... }`).
+   *
+   * Returning a value from a handler automatically sends a response. Objects
+   * are JSON stringified, strings and buffers are sent as-is, and web
+   * `Response` objects are converted into Node responses.
+   *
+   * @experimental
+   */
+  api?: false | ApiServerOptions
   /**
    * Configure HMR-specific options (port, host, path & protocol)
    */
@@ -205,12 +223,38 @@ export interface ResolvedServerOptions
     >,
     'fs' | 'middlewareMode' | 'sourcemapIgnoreList'
   > {
+  api: false | ResolvedApiServerOptions
   fs: Required<FileSystemServeOptions>
   middlewareMode: NonNullable<ServerOptions['middlewareMode']>
   sourcemapIgnoreList: Exclude<
     ServerOptions['sourcemapIgnoreList'],
     false | undefined
   >
+}
+
+export interface ApiServerOptions {
+  /**
+   * URL prefix that should map to API route modules.
+   *
+   * @default '/api'
+   */
+  prefix?: string
+  /**
+   * Directory (relative to project root) that contains API route modules.
+   *
+   * @default 'src/api'
+   */
+  dir?: string
+  /**
+   * Plugins executed for every API request before filesystem routes are resolved.
+   */
+  plugins?: ApiPlugin[]
+}
+
+export interface ResolvedApiServerOptions {
+  prefix: string
+  dir: string
+  plugins: ApiPlugin[]
 }
 
 export interface FileSystemServeOptions {
@@ -927,6 +971,10 @@ export async function _createServer(
     middlewares.use(servePublicMiddleware(server, publicFiles))
   }
 
+  if (server.config.server.api) {
+    middlewares.use(apiMiddleware(server))
+  }
+
   // main transform middleware
   middlewares.use(transformMiddleware(server))
 
@@ -1085,6 +1133,11 @@ export const serverConfigDefaults = Object.freeze({
   proxy: undefined,
   cors: { origin: defaultAllowedOrigins },
   headers: {},
+  api: {
+    prefix: '/api',
+    dir: 'src/api',
+    plugins: [],
+  },
   // hmr
   // ws
   warmup: {
@@ -1121,6 +1174,7 @@ export function resolveServerOptions(
 
   const server: ResolvedServerOptions = {
     ..._server,
+    api: false,
     fs: {
       ..._server.fs,
       // run searchForWorkspaceRoot only if needed
@@ -1130,6 +1184,25 @@ export function resolveServerOptions(
       _server.sourcemapIgnoreList === false
         ? () => false
         : _server.sourcemapIgnoreList,
+  }
+
+  if (_server.api === false) {
+    server.api = false
+  } else {
+    const apiOptions = _server.api ?? serverConfigDefaults.api
+    let prefix = apiOptions?.prefix ?? serverConfigDefaults.api.prefix
+    if (!prefix.startsWith('/')) {
+      prefix = `/${prefix}`
+    }
+    if (prefix.length > 1 && prefix.endsWith('/')) {
+      prefix = prefix.slice(0, -1)
+    }
+
+    server.api = {
+      prefix,
+      dir: resolvedAllowDir(root, apiOptions?.dir ?? serverConfigDefaults.api.dir),
+      plugins: apiOptions?.plugins ?? serverConfigDefaults.api.plugins,
+    }
   }
 
   let allowDirs = server.fs.allow
