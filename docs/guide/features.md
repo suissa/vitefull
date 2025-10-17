@@ -49,8 +49,6 @@ export const POST = async (req: Request) => {
 
 Handlers run through `server.ssrLoadModule`, so they benefit from Vite's ESM and TypeScript support. Returning objects will automatically send JSON responses, strings and buffers are sent as-is, and returning a standard `Response` gives you full control of the outgoing payload. You can disable the feature or customize the directory and URL prefix via the [`server.api`](../config/server-options.md#server-api) configuration option.
 
-The API middleware also supports request-level plugins via `server.api.plugins`. Built-in helpers like [`createJsonAuthPlugin`](./api-routes.md#json-auth-plugin) and [`createOAuthPlugin`](./api-routes.md#oauth-plugin) make it easy to layer authentication in front of your route modules. See the [API routes guide](./api-routes.md) for end-to-end examples, including a playground that combines JSON credentials with Google and GitHub OAuth.
-
 ## TypeScript
 
 Vite supports importing `.ts` files out of the box.

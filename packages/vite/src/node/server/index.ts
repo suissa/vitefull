@@ -245,16 +245,11 @@ export interface ApiServerOptions {
    * @default 'src/api'
    */
   dir?: string
-  /**
-   * Plugins executed for every API request before filesystem routes are resolved.
-   */
-  plugins?: ApiPlugin[]
 }
 
 export interface ResolvedApiServerOptions {
   prefix: string
   dir: string
-  plugins: ApiPlugin[]
 }
 
 export interface FileSystemServeOptions {
@@ -1136,7 +1131,6 @@ export const serverConfigDefaults = Object.freeze({
   api: {
     prefix: '/api',
     dir: 'src/api',
-    plugins: [],
   },
   // hmr
   // ws
@@ -1201,7 +1195,6 @@ export function resolveServerOptions(
     server.api = {
       prefix,
       dir: resolvedAllowDir(root, apiOptions?.dir ?? serverConfigDefaults.api.dir),
-      plugins: apiOptions?.plugins ?? serverConfigDefaults.api.plugins,
     }
   }
 

@@ -3,7 +3,6 @@ import { promises as fs } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { Connect } from '#dep-types/connect'
 import type { ViteDevServer } from '../../server'
-import type { ApiPlugin, ApiRequestContext } from '../api/plugin'
 import { isObject, normalizePath } from '../../utils'
 
 const API_EXTENSIONS = [
@@ -35,7 +34,6 @@ export function apiMiddleware(server: ViteDevServer): Connect.NextHandleFunction
 
   const apiPrefix = config.prefix
   const apiDirectory = config.dir
-  const plugins = config.plugins ?? []
 
   return async function viteApiMiddleware(req, res, next) {
     try {
@@ -50,32 +48,6 @@ export function apiMiddleware(server: ViteDevServer): Connect.NextHandleFunction
       }
 
       const routePath = normalizeRoute(pathname.slice(apiPrefix.length))
-
-      const context: ApiRequestContext = {
-        server,
-        req,
-        res,
-        url,
-        method: req.method.toUpperCase(),
-        prefix: apiPrefix,
-        pathname,
-        route: routePath,
-        state: Object.create(null),
-        handled: false,
-      }
-
-      const pluginResult = await runPlugins(plugins, context)
-      if (res.writableEnded) {
-        return
-      }
-      if (pluginResult !== undefined) {
-        await sendHandlerResult(res, pluginResult)
-        return
-      }
-      if (context.handled) {
-        return
-      }
-
       const file = await resolveApiFile(apiDirectory, routePath)
       if (!file) {
         return next()
@@ -84,7 +56,8 @@ export function apiMiddleware(server: ViteDevServer): Connect.NextHandleFunction
       const moduleId = toModuleId(server, file)
       const mod = await server.ssrLoadModule(moduleId)
 
-      const handler = resolveHandler(mod, context.method)
+      const method = req.method.toUpperCase()
+      const handler = resolveHandler(mod, method)
 
       if (!handler) {
         sendMethodNotAllowed(res, mod)
@@ -101,25 +74,6 @@ export function apiMiddleware(server: ViteDevServer): Connect.NextHandleFunction
       next(error as Error)
     }
   }
-}
-
-async function runPlugins(plugins: ApiPlugin[], context: ApiRequestContext) {
-  for (const plugin of plugins) {
-    if (!plugin.handle) {
-      continue
-    }
-    const result = await plugin.handle(context)
-    if (context.res.writableEnded) {
-      return undefined
-    }
-    if (result !== undefined) {
-      return result
-    }
-    if (context.handled) {
-      return undefined
-    }
-  }
-  return undefined
 }
 
 function decodePathname(url: string): string | null {
