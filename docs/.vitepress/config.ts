@@ -282,6 +282,10 @@ export default defineConfig({
               link: '/guide/features',
             },
             {
+              text: 'API Routes',
+              link: '/guide/api-routes',
+            },
+            {
               text: 'CLI',
               link: '/guide/cli',
             },

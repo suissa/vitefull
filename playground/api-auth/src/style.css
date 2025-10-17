@@ -1,0 +1,99 @@
+:root {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #1f2933;
+  background-color: #f9fafb;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, #f1f5f9 0, #f8fafc 60%, #f9fafb 100%);
+  min-height: 100vh;
+}
+
+#app {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+h1 {
+  margin-bottom: 24px;
+  font-size: 2.5rem;
+}
+
+section {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 12px 48px rgba(15, 23, 42, 0.12);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+button {
+  background: #2563eb;
+  border: none;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+button.secondary {
+  background: #e2e8f0;
+  color: #1f2933;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+input {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #cbd5f5;
+  font-size: 1rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+pre {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 16px;
+  border-radius: 12px;
+  overflow-x: auto;
+}
+
+a.button-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #111827;
+  color: white;
+  text-decoration: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+}
+
+a.button-link.google {
+  background: #0f9d58;
+}
+
+a.button-link.github {
+  background: #24292f;
+}
+
+.status {
+  font-weight: 600;
+}
+
+.message {
+  margin-top: 12px;
+}

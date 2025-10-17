@@ -16,6 +16,7 @@ import type { ModuleRunner } from 'vite/module-runner'
 import type { FSWatcher, WatchOptions } from '#dep-types/chokidar'
 import type { Connect } from '#dep-types/connect'
 import type { CommonServerOptions } from '../http'
+import type { ApiPlugin } from './api/plugin'
 import {
   httpServerStart,
   resolveHttpServer,

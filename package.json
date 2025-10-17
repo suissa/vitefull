@@ -18,7 +18,7 @@
     "vite"
   ],
   "scripts": {
-    "preinstall": "npx only-allow pnpm",
+    "preinstall": "node preinstall.js",
     "postinstall": "simple-git-hooks",
     "prepare": "husky install",
     "format": "prettier --write --cache .",

@@ -539,6 +539,12 @@ importers:
         specifier: ^1.6.1
         version: 1.6.1
 
+  playground/api-auth:
+    dependencies:
+      vite:
+        specifier: workspace:*
+        version: link:packages/vite
+
   playground/alias:
     dependencies:
       '@vue/shared':
