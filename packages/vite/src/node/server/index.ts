@@ -208,21 +208,20 @@ export interface ServerOptions extends CommonServerOptions {
   ) => Promise<void>
 }
 
-export interface ResolvedServerOptions
-  extends Omit<
-    RequiredExceptFor<
-      ServerOptions,
-      | 'host'
-      | 'https'
-      | 'proxy'
-      | 'hmr'
-      | 'ws'
-      | 'watch'
-      | 'origin'
-      | 'hotUpdateEnvironments'
-    >,
-    'fs' | 'middlewareMode' | 'sourcemapIgnoreList'
-  > {
+export interface ResolvedServerOptions extends Omit<
+  RequiredExceptFor<
+    ServerOptions,
+    | 'host'
+    | 'https'
+    | 'proxy'
+    | 'hmr'
+    | 'ws'
+    | 'watch'
+    | 'origin'
+    | 'hotUpdateEnvironments'
+  >,
+  'fs' | 'middlewareMode' | 'sourcemapIgnoreList'
+> {
   api: false | ResolvedApiServerOptions
   fs: Required<FileSystemServeOptions>
   middlewareMode: NonNullable<ServerOptions['middlewareMode']>
@@ -245,11 +244,19 @@ export interface ApiServerOptions {
    * @default 'src/api'
    */
   dir?: string
+  /**
+   * Request-level plugins that can handle, guard, or augment API requests
+   * before filesystem route handlers run.
+   *
+   * @experimental
+   */
+  plugins?: ApiPlugin[]
 }
 
 export interface ResolvedApiServerOptions {
   prefix: string
   dir: string
+  plugins: ApiPlugin[]
 }
 
 export interface FileSystemServeOptions {
@@ -1194,7 +1201,11 @@ export function resolveServerOptions(
 
     server.api = {
       prefix,
-      dir: resolvedAllowDir(root, apiOptions?.dir ?? serverConfigDefaults.api.dir),
+      dir: resolvedAllowDir(
+        root,
+        apiOptions?.dir ?? serverConfigDefaults.api.dir,
+      ),
+      plugins: apiOptions?.plugins ?? [],
     }
   }
 

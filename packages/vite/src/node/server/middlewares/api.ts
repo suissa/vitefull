@@ -3,6 +3,7 @@ import { promises as fs } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { Connect } from '#dep-types/connect'
 import type { ViteDevServer } from '../../server'
+import type { ApiRequestContext } from '../api/plugin'
 import { isObject, normalizePath } from '../../utils'
 
 const API_EXTENSIONS = [
@@ -26,7 +27,9 @@ const KNOWN_METHODS = [
   'HEAD',
 ]
 
-export function apiMiddleware(server: ViteDevServer): Connect.NextHandleFunction {
+export function apiMiddleware(
+  server: ViteDevServer,
+): Connect.NextHandleFunction {
   const config = server.config.server.api
   if (!config) {
     return (_req, _res, next) => next()
@@ -43,11 +46,36 @@ export function apiMiddleware(server: ViteDevServer): Connect.NextHandleFunction
       }
 
       const pathname = decodePathname(url)
-      if (!pathname || !pathname.startsWith(apiPrefix)) {
+      if (!pathname || !matchesApiPrefix(pathname, apiPrefix)) {
         return next()
       }
 
       const routePath = normalizeRoute(pathname.slice(apiPrefix.length))
+      const method = req.method.toUpperCase()
+      const context: ApiRequestContext = {
+        server,
+        req,
+        res,
+        url,
+        method,
+        prefix: apiPrefix,
+        pathname,
+        route: routePath,
+        state: {},
+        handled: false,
+      }
+
+      for (const plugin of config.plugins) {
+        const result = await plugin.handle?.(context)
+        if (context.handled || res.writableEnded) {
+          return
+        }
+        if (result !== undefined) {
+          await sendHandlerResult(res, result)
+          return
+        }
+      }
+
       const file = await resolveApiFile(apiDirectory, routePath)
       if (!file) {
         return next()
@@ -56,7 +84,6 @@ export function apiMiddleware(server: ViteDevServer): Connect.NextHandleFunction
       const moduleId = toModuleId(server, file)
       const mod = await server.ssrLoadModule(moduleId)
 
-      const method = req.method.toUpperCase()
       const handler = resolveHandler(mod, method)
 
       if (!handler) {
@@ -85,6 +112,10 @@ function decodePathname(url: string): string | null {
   }
 }
 
+function matchesApiPrefix(pathname: string, apiPrefix: string): boolean {
+  return pathname === apiPrefix || pathname.startsWith(`${apiPrefix}/`)
+}
+
 function normalizeRoute(route: string): string {
   if (!route || route === '/') {
     return '/'
@@ -92,7 +123,10 @@ function normalizeRoute(route: string): string {
   return route.startsWith('/') ? route : `/${route}`
 }
 
-async function resolveApiFile(apiDir: string, route: string): Promise<string | null> {
+async function resolveApiFile(
+  apiDir: string,
+  route: string,
+): Promise<string | null> {
   const segments = route.split('/').filter(Boolean)
   const basePath = path.join(apiDir, ...segments)
   const candidates: string[] = []
@@ -136,7 +170,10 @@ type ApiHandler = (
   res: ServerResponse,
 ) => unknown | Promise<unknown>
 
-function resolveHandler(mod: ApiModule, method: string): ApiHandler | undefined {
+function resolveHandler(
+  mod: ApiModule,
+  method: string,
+): ApiHandler | undefined {
   const methodExport = mod[method]
   if (typeof methodExport === 'function') {
     return methodExport as ApiHandler
@@ -151,7 +188,9 @@ function sendMethodNotAllowed(res: ServerResponse, mod: ApiModule): void {
   if (res.headersSent || res.writableEnded) {
     return
   }
-  const allow = KNOWN_METHODS.filter((method) => typeof mod[method] === 'function')
+  const allow = KNOWN_METHODS.filter(
+    (method) => typeof mod[method] === 'function',
+  )
   if (allow.length > 0) {
     res.setHeader('Allow', allow.join(', '))
   }
@@ -159,7 +198,10 @@ function sendMethodNotAllowed(res: ServerResponse, mod: ApiModule): void {
   res.end('Method Not Allowed')
 }
 
-async function sendHandlerResult(res: ServerResponse, result: unknown): Promise<void> {
+async function sendHandlerResult(
+  res: ServerResponse,
+  result: unknown,
+): Promise<void> {
   if (res.headersSent || res.writableEnded) {
     return
   }
@@ -197,7 +239,9 @@ async function sendHandlerResult(res: ServerResponse, result: unknown): Promise<
 
 type ResponseLike = {
   status: number
-  headers?: { forEach: (callback: (value: string, key: string) => void) => void }
+  headers?: {
+    forEach: (callback: (value: string, key: string) => void) => void
+  }
   arrayBuffer: () => Promise<ArrayBuffer>
 }
 
@@ -214,7 +258,10 @@ function isResponseLike(value: unknown): value is ResponseLike {
   )
 }
 
-async function sendWebResponse(res: ServerResponse, response: ResponseLike): Promise<void> {
+async function sendWebResponse(
+  res: ServerResponse,
+  response: ResponseLike,
+): Promise<void> {
   res.statusCode = response.status
   response.headers?.forEach((value, key) => {
     if (key.toLowerCase() === 'set-cookie') {
