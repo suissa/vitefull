@@ -116,7 +116,7 @@ export default defineConfig({
 
 ## server.api
 
-- **Type:** `false | { prefix?: string; dir?: string }`
+- **Type:** `false | { prefix?: string; dir?: string; plugins?: ApiPlugin[] }`
 - **Default:** `{ prefix: '/api', dir: 'src/api' }`
 
 Serve API routes directly from the Vite dev server. When enabled, any request whose pathname starts with the configured `prefix` (defaults to `/api`) will resolve to a module inside `dir` (defaults to `src/api`). Modules are loaded through [`server.ssrLoadModule`](../guide/api-environment-frameworks.md#loadmodule), so TypeScript, JSX, and Vite plugins are applied before execution.
