@@ -2,8 +2,8 @@ import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import request from 'supertest'
-import type { ApiServerOptions, ViteDevServer } from '../index'
-import { createServer } from '../index'
+import type { ApiPlugin, ApiServerOptions, ViteDevServer } from '../index'
+import { createJsonAuthPlugin, createServer } from '../index'
 
 const root = fileURLToPath(new URL('./fixtures/api/basic', import.meta.url))
 
@@ -75,10 +75,70 @@ describe('dev server api middleware', () => {
 
     const head = await agent.head('/functions/web-response').expect(201)
     expect(head.headers['x-handler']).toBe('HEAD')
-    expect(head.headers['set-cookie']).toEqual([
-      'a=1; Path=/',
-      'b=2; Path=/',
-    ])
+    expect(head.headers['set-cookie']).toEqual(['a=1; Path=/', 'b=2; Path=/'])
     expect(head.text ?? '').toBe('')
+  })
+
+  it('runs API plugins before filesystem handlers', async () => {
+    const plugins: ApiPlugin[] = [
+      {
+        name: 'test-api-plugin',
+        handle(context) {
+          if (context.route === '/plugin-response') {
+            return { handledBy: context.method, route: context.route }
+          }
+          if (context.route === '/plugin-state') {
+            ;(context.req as typeof context.req & { user?: unknown }).user = {
+              name: 'Plugin User',
+            }
+          }
+        },
+      },
+    ]
+    const server = await startServer({ plugins })
+    const agent = request(server.middlewares)
+
+    const pluginResponse = await agent.get('/api/plugin-response').expect(200)
+    expect(pluginResponse.body).toEqual({
+      handledBy: 'GET',
+      route: '/plugin-response',
+    })
+
+    const stateResponse = await agent.get('/api/plugin-state').expect(200)
+    expect(stateResponse.body).toEqual({ user: { name: 'Plugin User' } })
+  })
+
+  it('provides JSON auth helpers for direct frontend API calls', async () => {
+    const server = await startServer({
+      plugins: [
+        createJsonAuthPlugin({
+          users: {
+            demo: {
+              password: 'secret',
+              profile: { name: 'Demo User' },
+            },
+          },
+          publicRoutes: ['/auth/json/login'],
+        }),
+      ],
+    })
+    const agent = request(server.middlewares)
+
+    await agent.get('/api/profile').expect(401, { error: 'Unauthorized' })
+
+    const login = await agent
+      .post('/api/auth/json/login')
+      .send({ username: 'demo', password: 'secret' })
+      .expect(200)
+    expect(login.body.user).toEqual({ username: 'demo', name: 'Demo User' })
+    expect(login.body.token).toEqual(expect.any(String))
+
+    const profile = await agent
+      .get('/api/profile')
+      .set('Authorization', `Bearer ${login.body.token}`)
+      .expect(200)
+    expect(profile.body).toEqual({
+      user: { username: 'demo', name: 'Demo User' },
+    })
   })
 })
