@@ -161,6 +161,36 @@ importers:
         specifier: ^3.1.1
         version: 3.1.1(typescript@5.9.2)
 
+  examples/api-basic:
+    dependencies:
+      vite:
+        specifier: workspace:*
+        version: link:../../packages/vite
+    devDependencies:
+      typescript:
+        specifier: ~5.9.2
+        version: 5.9.2
+
+  examples/api-json-auth:
+    dependencies:
+      vite:
+        specifier: workspace:*
+        version: link:../../packages/vite
+    devDependencies:
+      typescript:
+        specifier: ~5.9.2
+        version: 5.9.2
+
+  examples/api-plugins:
+    dependencies:
+      vite:
+        specifier: workspace:*
+        version: link:../../packages/vite
+    devDependencies:
+      typescript:
+        specifier: ~5.9.2
+        version: 5.9.2
+
   packages/create-vite:
     devDependencies:
       '@clack/prompts':
